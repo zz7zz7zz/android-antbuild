@@ -7,21 +7,19 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
-import org.apache.tools.ant.DefaultLogger;
-import org.apache.tools.ant.Project;
-import org.apache.tools.ant.ProjectHelper;
 
 /**
- * java -->执行ant脚本-->cmd 命令-->打包
+ * java -->cmd 命令-->打包
  * @author Administrator
  *
  */
-public class AntTest0 {     
+public class AntTest1 {     
 	
 	
 	   // private final static ArrayList<String> flagList = new ArrayList<String>(); //也可以使用集合,不过需要手动添加项  
-	private final static String[] channelList = new String[]{"A","B","C","D"};//此处初始化市场标识  
+    private final static String[] channelList = new String[]{"A","B","C","D"};//此处初始化市场标识  
     private final static String projectName="git_antbuild_project";
     private final static String projectBasePath = "E:\\git\\antbuild\\git_antbuild_project"; //项目的根目录
     private final static String outPutPath = "E:\\git\\antbuild\\git_antbuild_project\\outapk"; //apk输出目录
@@ -29,10 +27,10 @@ public class AntTest0 {
       
     public static void main(String args[]) {     
     	
-    	setProjectEnvironment();
-    	
     	try {     
 	    		System.out.println("---------打包开始A----------\n");  
+	    		
+	    		setProjectEnvironmet();
 	    		
 	    		for(String itemChannel : channelList)
 	            {  
@@ -40,7 +38,7 @@ public class AntTest0 {
 	            	buildApk();
 	            	copyApk(itemChannel);
 	            }  
-	    		
+	            
 	    		System.out.println("---------打包结束B---------\n");  
             
         } catch (Exception e) {     
@@ -51,65 +49,35 @@ public class AntTest0 {
     	}
     }  
     
-    
-    private Project project;     
-    
-    public void init(String _buildFile, String _baseDir) throws Exception {     
-        project = new Project();     
-    
-        project.init();     
-    
-        DefaultLogger consoleLogger = new DefaultLogger();     
-        consoleLogger.setErrorPrintStream(System.err);     
-        consoleLogger.setOutputPrintStream(System.out);     
-        consoleLogger.setMessageOutputLevel(Project.MSG_INFO);     
-        project.addBuildListener(consoleLogger);      
-             
-        // Set the base directory. If none is given, "." is used.     
-        if (_baseDir == null)     
-            _baseDir = new String(".");     
-    
-        project.setBasedir(_baseDir);     
-    
-        if (_buildFile == null)     
-            _buildFile = new String(projectBasePath + File.separator + "build.xml");     
-    
-        //ProjectHelper.getProjectHelper().parse(project, new File(_buildFile));     
-        // 关键代码   
-        ProjectHelper.configureProject(project, new File(_buildFile));     
-    }     
-    
-    public void runTarget(String _target) throws Exception {     
-        // Test if the project exists     
-        if (project == null)     
-            throw new Exception(     
-                    "No target can be launched because the project has not been initialized. Please call the 'init' method first !");     
-        // If no target is specified, run the default one.     
-        if (_target == null)     
-            _target = project.getDefaultTarget();     
-             
-        // Run the target     
-        project.executeTarget(_target);     
-    
-    }     
-    
-    static void setProjectEnvironment()
+    static void setProjectEnvironmet() throws Exception
     {
-    	InputStream in=AntTest0.class.getResourceAsStream("resource/build.xml");
-    	FileUtil.writeFile(projectBasePath+File.separator+"build.xml", in);
-    	
-    	in=AntTest0.class.getResourceAsStream("resource/ant.properties");
+    	InputStream in=AntTest0.class.getResourceAsStream("resource/ant.properties");
     	FileUtil.writeFile(projectBasePath+File.separator+"ant.properties", in);
     	
     	in=AntTest0.class.getResourceAsStream("resource/keystore");
     	FileUtil.writeFile(projectBasePath+File.separator+"keystore", in);
     	
-    	in=AntTest0.class.getResourceAsStream("resource/local.properties");
-    	FileUtil.writeFile(projectBasePath+File.separator+"local.properties", in);
-    	
     	FileUtil.copyFiles(projectBasePath+File.separator+"AndroidManifest.xml", projectBasePath+File.separator+"AndroidManifest.xml.tmp", true);
     	
+    	String buildPath=projectBasePath+File.separator+"build.xml";
+    	String projectpropertiesPath=projectBasePath+File.separator+"project.properties";
+    	
+    	if(!FileUtil.isFileExist(buildPath)&&!FileUtil.isFileExist(projectpropertiesPath))
+    	{
+//    		Runtime.getRuntime().exec("cmd /c "+"android update project -p "+projectBasePath+" -t android-4");
+    		
+    		execCommand("cmd /c "+"android update project -p "+projectBasePath+" -t android-4");
+    	}
+    	else if(!FileUtil.isFileExist(buildPath)&&FileUtil.isFileExist(projectpropertiesPath))
+    	{
+//    		Runtime.getRuntime().exec("cmd /c "+"android update project -p "+projectBasePath);
+    		
+    		execCommand("cmd /c "+"android update project -p "+projectBasePath);
+    	}
+    	
+    	modifyBuild();
     }
+    
     
     static void cleanProjectEnvironment()
     {
@@ -121,6 +89,24 @@ public class AntTest0 {
     	FileUtil.deleteFile(projectBasePath+File.separator+"AndroidManifest.xml.tmp");
     }
     
+    
+    static void execCommand(String cmd)
+    {
+    	try {
+           
+    		Process p = Runtime.getRuntime().exec(cmd);  
+            InputStream is = p.getInputStream();  
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));  
+            String line = null;  
+            while ((line = br.readLine()) != null)
+            {  
+                System.out.println(line);  
+            }  
+            
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
     static void modifyAndroidManifest(String itemChannel)
     {
         //先修改AndroidManifest文件:读取临时文件中的@market@修改为市场标识,然后写入manifest.xml中  
@@ -134,10 +120,12 @@ public class AntTest0 {
     static void buildApk() throws Exception
     {
         //执行打包命令  
-        AntTest0 mytest = new AntTest0();     
-        mytest.init(projectBasePath + File.separator + "build.xml",projectBasePath);   
-        mytest.runTarget("clean");  
-        mytest.runTarget("release"); 
+    	String buildPath=projectBasePath+File.separator+"build.xml";
+//    	Runtime.getRuntime().exec("cmd /c "+"ant clean -f "+buildPath);
+//    	Runtime.getRuntime().exec("cmd /c "+"ant release -f "+buildPath);
+    	
+    	execCommand("cmd /c "+"ant clean -f "+buildPath);
+    	execCommand("cmd /c "+"ant release -f "+buildPath);
     }
     
     static void copyApk(String itemChannel)
@@ -256,6 +244,48 @@ public class AntTest0 {
         write(projectpropertiesPath, buf.toString());
     }
 
+    static void modifyBuild() throws Exception
+    {
+    	String buildPath=projectBasePath+File.separator+"build.xml";
+    	String tmpPlaceHolder="MainActivity";
+        
+    	boolean fristFind=true;
+        BufferedReader br = null;    
+        String line = null;    
+        StringBuffer buf = new StringBuffer();    
+            
+        try {    
+            // 根据文件路径创建缓冲输入流    
+            br = new BufferedReader(new FileReader(buildPath));    
+            while ((line = br.readLine()) != null) 
+            {    
+                if (fristFind&&line.startsWith("<project")&&line.contains(tmpPlaceHolder)) 
+                {    
+                    line = line.replace(tmpPlaceHolder, projectName);  
+                    buf.append(line);   
+                    fristFind=false;
+                }    
+                else
+                {    
+                    buf.append(line);    
+                }    
+                buf.append(System.getProperty("line.separator"));    
+            }    
+        } catch (Exception e) {    
+            e.printStackTrace();    
+        } finally {    
+            // 关闭流    
+            if (br != null) {    
+                try {    
+                    br.close();    
+                } catch (IOException e) {    
+                    br = null;    
+                }    
+            }    
+        }    
+            
+        write(buildPath, buf.toString());    
+    }
     
     /**
      * 读出占位符，并替换为渠道号
