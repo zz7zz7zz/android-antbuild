@@ -100,6 +100,9 @@ public class AntTest0 {
     	in=AntTest0.class.getResourceAsStream("resource/keystore");
     	FileUtil.writeFile(projectBasePath+File.separator+"keystore", in);
     	
+    	in=AntTest0.class.getResourceAsStream("resource/local.properties");
+    	FileUtil.writeFile(projectBasePath+File.separator+"local.properties", in);
+    	
     	FileUtil.copyFiles(projectBasePath+File.separator+"AndroidManifest.xml", projectBasePath+File.separator+"AndroidManifest.xml.tmp", true);
     	
     }
@@ -109,6 +112,7 @@ public class AntTest0 {
     	FileUtil.deleteFile(projectBasePath+File.separator+"build.xml");
     	FileUtil.deleteFile(projectBasePath+File.separator+"ant.properties");
     	FileUtil.deleteFile(projectBasePath+File.separator+"keystore");
+    	FileUtil.deleteFile(projectBasePath+File.separator+"local.properties");
     	FileUtil.copyFiles(projectBasePath+File.separator+"AndroidManifest.xml.tmp", projectBasePath+File.separator+"AndroidManifest.xml", true);
     	FileUtil.deleteFile(projectBasePath+File.separator+"AndroidManifest.xml.tmp");
     }
